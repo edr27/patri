@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { BarChart3, Download, FileText, Building2, FolderTree, ArrowRightLeft, MapPin, XCircle, Loader2 } from 'lucide-react';
-import { supabase } from '@/services/supabase';
+import { supabase, isSupabaseConfigured } from '@/services/supabase';
+import { mockPatrimoniosList, mockMovimentacoesList } from '@/services/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -54,6 +55,49 @@ export function RelatoriosPage() {
   const generate = useCallback(async (type: ReportType) => {
     setGenerating(type);
     try {
+      if (!isSupabaseConfigured) {
+        let rows: Record<string, unknown>[] = [];
+        if (type.startsWith('inventario') || type === 'sem_localizacao' || type === 'desativados') {
+          let items = [...mockPatrimoniosList];
+          if (type === 'inventario_empresa' && filtroEmpresa) {
+            items = items.filter(p => p.empresa_atual_id === filtroEmpresa);
+          }
+          if (type === 'sem_localizacao') {
+            items = items.filter(p => !p.setor_atual_id);
+          }
+          if (type === 'desativados') {
+            items = items.filter(p => p.status === 'desativado');
+          }
+          rows = items.map(p => ({
+            'Código': p.codigo,
+            'Nome': p.nome,
+            'Categoria': p.categoria?.nome || '',
+            'Empresa': p.empresa_atual?.nome || '',
+            'Setor': p.setor_atual?.nome || '',
+            'Status': p.status,
+            'Conservação': p.estado_conservacao,
+            'Situação': p.situacao_operacional,
+            'Marca': p.marca || '',
+            'Modelo': p.modelo || '',
+            'Valor (R$)': p.valor_aquisicao || '',
+          }));
+        } else {
+          rows = mockMovimentacoesList.map(m => ({
+            'Data': new Date(m.created_at).toLocaleString('pt-BR'),
+            'Código': m.patrimonio?.codigo || '',
+            'Nome': m.patrimonio?.nome || '',
+            'Tipo': m.tipo,
+            'Origem': `${m.empresa_origem?.nome || ''} / ${m.setor_origem?.nome || ''}`,
+            'Destino': `${m.empresa_destino?.nome || ''} / ${m.setor_destino?.nome || ''}`,
+            'Motivo': m.motivo,
+          }));
+        }
+        downloadCSV(rows, `relatorio_${type}`);
+        toast.success('Relatório gerado com sucesso!');
+        setGenerating(null);
+        return;
+      }
+
       switch (type) {
         case 'inventario_geral':
         case 'inventario_empresa':

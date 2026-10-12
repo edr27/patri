@@ -13,7 +13,8 @@ import {
   X,
   History,
 } from 'lucide-react';
-import { supabase } from '@/services/supabase';
+import { supabase, isSupabaseConfigured } from '@/services/supabase';
+import { MOCK_CATEGORIAS, MOCK_AUDITORIA } from '@/services/mockData';
 import { toast } from 'sonner';
 import type { CategoriaPatrimonio, RegistroAuditoria } from '@/types';
 
@@ -54,6 +55,11 @@ export function ConfiguracoesPage() {
   // Carregar Categorias
   const fetchCategorias = useCallback(async () => {
     setLoadingCategorias(true);
+    if (!isSupabaseConfigured) {
+      setCategorias([...MOCK_CATEGORIAS]);
+      setLoadingCategorias(false);
+      return;
+    }
     const { data, error } = await supabase
       .from('categorias_patrimonio')
       .select('*')
@@ -67,6 +73,15 @@ export function ConfiguracoesPage() {
   // Carregar Auditoria
   const fetchAuditoria = useCallback(async () => {
     setLoadingAuditoria(true);
+    if (!isSupabaseConfigured) {
+      let filtered = [...MOCK_AUDITORIA];
+      if (filtroTipo) {
+        filtered = filtered.filter(a => a.tipo === filtroTipo);
+      }
+      setRegistros(filtered as unknown as AuditoriaComPerfil[]);
+      setLoadingAuditoria(false);
+      return;
+    }
     let query = supabase
       .from('registros_auditoria')
       .select('*')
@@ -98,6 +113,34 @@ export function ConfiguracoesPage() {
 
     setSavingCategoria(true);
     try {
+      if (!isSupabaseConfigured) {
+        if (editCategoriaId) {
+          const c = MOCK_CATEGORIAS.find(item => item.id === editCategoriaId);
+          if (c) {
+            c.nome = nomeCategoria.trim();
+            c.descricao = descCategoria.trim() || null;
+          }
+          toast.success('Categoria atualizada com sucesso');
+        } else {
+          MOCK_CATEGORIAS.push({
+            id: `cat-${Date.now()}`,
+            nome: nomeCategoria.trim(),
+            descricao: descCategoria.trim() || null,
+            ativo: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+          toast.success('Categoria criada com sucesso');
+        }
+        setShowCategoriaModal(false);
+        setNomeCategoria('');
+        setDescCategoria('');
+        setEditCategoriaId(null);
+        fetchCategorias();
+        setSavingCategoria(false);
+        return;
+      }
+
       if (editCategoriaId) {
         const { error } = await supabase
           .from('categorias_patrimonio')
@@ -137,6 +180,14 @@ export function ConfiguracoesPage() {
   // Alternar Status Categoria
   const handleToggleCategoriaStatus = async (cat: CategoriaPatrimonio) => {
     try {
+      if (!isSupabaseConfigured) {
+        const c = MOCK_CATEGORIAS.find(item => item.id === cat.id);
+        if (c) c.ativo = !c.ativo;
+        toast.success(`Categoria ${!cat.ativo ? 'ativada' : 'desativada'} com sucesso`);
+        fetchCategorias();
+        return;
+      }
+
       const { error } = await supabase
         .from('categorias_patrimonio')
         .update({ ativo: !cat.ativo, updated_at: new Date().toISOString() })

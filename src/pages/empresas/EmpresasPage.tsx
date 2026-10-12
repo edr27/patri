@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Building2, Plus, Pencil, Power } from 'lucide-react';
-import { supabase } from '@/services/supabase';
+import { supabase, isSupabaseConfigured } from '@/services/supabase';
+import { MOCK_EMPRESAS } from '@/services/mockData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
 import type { Empresa } from '@/types';
@@ -17,6 +18,12 @@ export function EmpresasPage() {
 
   const fetchEmpresas = useCallback(async () => {
     setLoading(true);
+    if (!isSupabaseConfigured) {
+      setEmpresas([...MOCK_EMPRESAS]);
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('empresas')
       .select('*')
@@ -35,6 +42,24 @@ export function EmpresasPage() {
   const handleAdd = async () => {
     if (!novoNome.trim()) return;
     setSaving(true);
+
+    if (!isSupabaseConfigured) {
+      const nova: Empresa = {
+        id: `emp-${Date.now()}`,
+        nome: novoNome.trim(),
+        ativo: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      MOCK_EMPRESAS.push(nova);
+      toast.success('Empresa cadastrada com sucesso');
+      setNovoNome('');
+      setShowAdd(false);
+      fetchEmpresas();
+      setSaving(false);
+      return;
+    }
+
     const { error } = await supabase.from('empresas').insert({ nome: novoNome.trim() });
     if (error) {
       toast.error(error.message);
@@ -50,6 +75,17 @@ export function EmpresasPage() {
   const handleEdit = async (id: string) => {
     if (!editNome.trim()) return;
     setSaving(true);
+
+    if (!isSupabaseConfigured) {
+      const e = MOCK_EMPRESAS.find(item => item.id === id);
+      if (e) e.nome = editNome.trim();
+      toast.success('Empresa atualizada');
+      setEditingId(null);
+      fetchEmpresas();
+      setSaving(false);
+      return;
+    }
+
     const { error } = await supabase.from('empresas').update({ nome: editNome.trim() }).eq('id', id);
     if (error) {
       toast.error(error.message);
@@ -62,6 +98,14 @@ export function EmpresasPage() {
   };
 
   const toggleAtivo = async (empresa: Empresa) => {
+    if (!isSupabaseConfigured) {
+      const e = MOCK_EMPRESAS.find(item => item.id === empresa.id);
+      if (e) e.ativo = !e.ativo;
+      toast.success(empresa.ativo ? 'Empresa desativada' : 'Empresa reativada');
+      fetchEmpresas();
+      return;
+    }
+
     const { error } = await supabase
       .from('empresas')
       .update({ ativo: !empresa.ativo })

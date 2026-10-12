@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { FolderTree, Plus, Pencil, Power, Building2 } from 'lucide-react';
-import { supabase } from '@/services/supabase';
+import { supabase, isSupabaseConfigured } from '@/services/supabase';
+import { MOCK_SETORES, MOCK_EMPRESAS } from '@/services/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
@@ -31,6 +32,20 @@ export function SetoresPage() {
 
   const fetchSetores = useCallback(async () => {
     setLoading(true);
+
+    if (!isSupabaseConfigured) {
+      let items = MOCK_SETORES.map(s => ({
+        ...s,
+        empresa: MOCK_EMPRESAS.find(e => e.id === s.empresa_id) || null,
+      }));
+      if (filtroEmpresa) {
+        items = items.filter(s => s.empresa_id === filtroEmpresa);
+      }
+      setSetores(items as unknown as SetorComEmpresa[]);
+      setLoading(false);
+      return;
+    }
+
     let query = supabase
       .from('setores')
       .select(`
@@ -61,6 +76,26 @@ export function SetoresPage() {
   const handleAdd = async () => {
     if (!novoNome.trim() || !novaEmpresaId) return;
     setSaving(true);
+
+    if (!isSupabaseConfigured) {
+      const novo = {
+        id: `set-${Date.now()}`,
+        nome: novoNome.trim(),
+        empresa_id: novaEmpresaId,
+        ativo: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      MOCK_SETORES.push(novo);
+      toast.success('Setor cadastrado com sucesso');
+      setNovoNome('');
+      setNovaEmpresaId('');
+      setShowAdd(false);
+      fetchSetores();
+      setSaving(false);
+      return;
+    }
+
     const { error } = await supabase.from('setores').insert({
       nome: novoNome.trim(),
       empresa_id: novaEmpresaId,
@@ -80,6 +115,17 @@ export function SetoresPage() {
   const handleEdit = async (id: string) => {
     if (!editNome.trim()) return;
     setSaving(true);
+
+    if (!isSupabaseConfigured) {
+      const s = MOCK_SETORES.find(item => item.id === id);
+      if (s) s.nome = editNome.trim();
+      toast.success('Setor atualizado');
+      setEditingId(null);
+      fetchSetores();
+      setSaving(false);
+      return;
+    }
+
     const { error } = await supabase.from('setores').update({ nome: editNome.trim() }).eq('id', id);
     if (error) {
       toast.error(error.message);
@@ -92,10 +138,19 @@ export function SetoresPage() {
   };
 
   const toggleAtivo = async (setor: SetorComEmpresa) => {
+    if (!isSupabaseConfigured) {
+      const s = MOCK_SETORES.find(item => item.id === setor.id);
+      if (s) s.ativo = !s.ativo;
+      toast.success(setor.ativo ? 'Setor desativado' : 'Setor reativado');
+      fetchSetores();
+      return;
+    }
+
     const { error } = await supabase
       .from('setores')
       .update({ ativo: !setor.ativo })
       .eq('id', setor.id);
+
     if (error) {
       toast.error(error.message);
     } else {
@@ -103,6 +158,7 @@ export function SetoresPage() {
       fetchSetores();
     }
   };
+
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><div className="spinner w-8 h-8" /></div>;

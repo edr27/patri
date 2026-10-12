@@ -3,11 +3,18 @@ import { Package, Plus, Search, Eye, Pencil, Power, ChevronLeft, ChevronRight, Q
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { listarPatrimonios, criarPatrimonio, editarPatrimonio, desativarPatrimonio } from '@/services/patrimonios';
-import { supabase } from '@/services/supabase';
+import { supabase, isSupabaseConfigured } from '@/services/supabase';
+import { MOCK_CATEGORIAS, MOCK_SETORES } from '@/services/mockData';
 import { toast } from 'sonner';
 import { EtiquetaModal } from '@/components/patrimonios/EtiquetaModal';
 import { ConsultaRapidaModal } from '@/components/patrimonios/ConsultaRapidaModal';
-import type { PatrimonioCompleto, FiltrosPatrimonio, CategoriaPatrimonio } from '@/types';
+import type {
+  PatrimonioCompleto,
+  FiltrosPatrimonio,
+  CategoriaPatrimonio,
+  EstadoConservacao,
+  SituacaoOperacional,
+} from '@/types';
 
 interface SetorSimples { id: string; nome: string; empresa_id: string }
 
@@ -73,6 +80,12 @@ export function PatrimoniosPage() {
   }, [filtros]);
 
   const fetchAux = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setCategorias(MOCK_CATEGORIAS);
+      setSetores(MOCK_SETORES as unknown as SetorSimples[]);
+      return;
+    }
+
     const [catRes, setRes] = await Promise.all([
       supabase.from('categorias_patrimonio').select('*').eq('ativo', true).order('nome'),
       supabase.from('setores').select('id, nome, empresa_id').eq('ativo', true).order('nome'),
@@ -107,8 +120,8 @@ export function PatrimoniosPage() {
         numero_serie: form.numero_serie || null,
         data_aquisicao: form.data_aquisicao || null,
         valor_aquisicao: form.valor_aquisicao ? parseFloat(form.valor_aquisicao) : null,
-        estado_conservacao: form.estado_conservacao,
-        situacao_operacional: form.situacao_operacional,
+        estado_conservacao: form.estado_conservacao as EstadoConservacao,
+        situacao_operacional: form.situacao_operacional as SituacaoOperacional,
         responsavel_atual: form.responsavel_atual || null,
         observacoes: form.observacoes || null,
       };

@@ -13,7 +13,8 @@ import {
   Package,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/services/supabase';
+import { supabase, isSupabaseConfigured } from '@/services/supabase';
+import { MOCK_SETORES, mockPatrimoniosList } from '@/services/mockData';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { PatrimonioCompleto } from '@/types';
@@ -60,6 +61,13 @@ export function InventarioPage() {
     }
     const loadSetores = async () => {
       setLoadingSetores(true);
+      if (!isSupabaseConfigured) {
+        const filtered = MOCK_SETORES.filter(s => s.empresa_id === empresaId && s.ativo);
+        setSetores(filtered as unknown as SetorItem[]);
+        setLoadingSetores(false);
+        return;
+      }
+
       const { data } = await supabase
         .from('setores')
         .select('id, nome, empresa_id')
@@ -81,6 +89,20 @@ export function InventarioPage() {
 
     setLoadingBens(true);
     try {
+      if (!isSupabaseConfigured) {
+        const filtered = mockPatrimoniosList.filter(
+          p => p.empresa_atual_id === empresaId && p.setor_atual_id === setorId && p.status === 'ativo'
+        );
+        setBensEsperados(filtered);
+        setConferidos([]);
+        setDivergentes([]);
+        setEmAndamento(true);
+        toast.success(`Conferência iniciada! ${filtered.length} bens esperados neste setor.`);
+        setTimeout(() => inputRef.current?.focus(), 150);
+        setLoadingBens(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('patrimonios')
         .select(`
@@ -151,23 +173,33 @@ export function InventarioPage() {
 
     // 2. Não pertence a este setor: buscar no banco geral
     try {
-      const { data, error } = await supabase
-        .from('patrimonios')
-        .select(`
-          *,
-          empresa_atual:empresas!patrimonios_empresa_atual_id_fkey(id, nome),
-          setor_atual:setores!patrimonios_setor_atual_id_fkey(id, nome),
-          categoria:categorias_patrimonio!patrimonios_categoria_id_fkey(id, nome)
-        `)
-        .eq('codigo', codigoLimpo)
-        .maybeSingle();
+      let patriDivergente: PatrimonioCompleto | null = null;
 
-      if (error || !data) {
+      if (!isSupabaseConfigured) {
+        patriDivergente = mockPatrimoniosList.find(p => p.codigo === codigoLimpo) || null;
+      } else {
+        const { data, error } = await supabase
+          .from('patrimonios')
+          .select(`
+            *,
+            empresa_atual:empresas!patrimonios_empresa_atual_id_fkey(id, nome),
+            setor_atual:setores!patrimonios_setor_atual_id_fkey(id, nome),
+            categoria:categorias_patrimonio!patrimonios_categoria_id_fkey(id, nome)
+          `)
+          .eq('codigo', codigoLimpo)
+          .maybeSingle();
+
+        if (error || !data) {
+          patriDivergente = null;
+        } else {
+          patriDivergente = data as unknown as PatrimonioCompleto;
+        }
+      }
+
+      if (!patriDivergente) {
         toast.error(`Código ${codigoLimpo} não cadastrado no sistema!`);
         return;
       }
-
-      const patriDivergente = data as unknown as PatrimonioCompleto;
       setDivergentes((prev) => [
         { patrimonio: patriDivergente, hora: horaAgora, tipo: 'divergente' },
         ...prev,

@@ -8,7 +8,8 @@ import {
   MapPin,
   XCircle,
 } from 'lucide-react';
-import { supabase } from '@/services/supabase';
+import { supabase, isSupabaseConfigured } from '@/services/supabase';
+import { mockPatrimoniosList, mockMovimentacoesList, MOCK_CATEGORIAS } from '@/services/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import type { DashboardStats, MovimentacaoCompleta } from '@/types';
 
@@ -60,6 +61,44 @@ export function DashboardPage() {
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
+      // Se estiver no Modo Demonstração (sem Supabase conectado), carrega dados mock locais imediatamente
+      if (!isSupabaseConfigured) {
+        const items = mockPatrimoniosList.filter(
+          p => !selectedEmpresa || p.empresa_atual_id === selectedEmpresa
+        );
+        const ativos = items.filter(p => p.status === 'ativo').length;
+        const desativados = items.filter(p => p.status === 'desativado').length;
+        const semLocalizacao = items.filter(p => p.status === 'ativo' && !p.setor_atual_id).length;
+
+        const porEmpresa: DashboardStats['por_empresa'] = empresasAcesso
+          .filter(e => !selectedEmpresa || e.id === selectedEmpresa)
+          .map(emp => ({
+            empresa_id: emp.id,
+            empresa_nome: emp.nome,
+            quantidade: mockPatrimoniosList.filter(p => p.empresa_atual_id === emp.id && p.status === 'ativo').length,
+          }));
+
+        const porCategoria: DashboardStats['por_categoria'] = MOCK_CATEGORIAS.map(cat => ({
+          categoria_id: cat.id,
+          categoria_nome: cat.nome,
+          quantidade: items.filter(p => p.categoria_id === cat.id && p.status === 'ativo').length,
+        })).filter(c => c.quantidade > 0);
+
+        setMovimentacoes(mockMovimentacoesList);
+        setStats({
+          total_patrimonios: items.length,
+          patrimonios_ativos: ativos,
+          patrimonios_desativados: desativados,
+          patrimonios_sem_localizacao: semLocalizacao,
+          por_empresa: porEmpresa,
+          por_categoria: porCategoria,
+          por_estado: [],
+          movimentacoes_recentes: mockMovimentacoesList,
+        });
+        setLoading(false);
+        return;
+      }
+
       const empresaIds = empresasAcesso.map(e => e.id);
       if (empresaIds.length === 0) {
         setStats(null);

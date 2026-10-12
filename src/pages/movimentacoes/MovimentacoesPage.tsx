@@ -3,7 +3,8 @@ import { ArrowRightLeft, Search, ChevronLeft, ChevronRight, ArrowRight, CheckCir
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { realizarTransferencia, listarMovimentacoes } from '@/services/movimentacoes';
-import { supabase } from '@/services/supabase';
+import { supabase, isSupabaseConfigured } from '@/services/supabase';
+import { mockPatrimoniosList, MOCK_SETORES } from '@/services/mockData';
 import { toast } from 'sonner';
 import type { MovimentacaoCompleta, FiltrosMovimentacao, PatrimonioCompleto } from '@/types';
 
@@ -72,6 +73,16 @@ export function MovimentacoesPage() {
   // Buscar patrimônios para seleção
   const searchPatrimonios = async (busca: string) => {
     if (!busca.trim()) { setPatrimonios([]); return; }
+
+    if (!isSupabaseConfigured) {
+      const b = busca.toLowerCase();
+      const filtered = mockPatrimoniosList.filter(
+        p => p.status === 'ativo' && (p.codigo.toLowerCase().includes(b) || p.nome.toLowerCase().includes(b))
+      ).slice(0, 10);
+      setPatrimonios(filtered);
+      return;
+    }
+
     const { data } = await supabase
       .from('patrimonios')
       .select(`
@@ -86,6 +97,10 @@ export function MovimentacoesPage() {
   };
 
   const fetchSetores = async () => {
+    if (!isSupabaseConfigured) {
+      setSetores(MOCK_SETORES as unknown as SetorSimples[]);
+      return;
+    }
     const { data } = await supabase.from('setores').select('id, nome, empresa_id').eq('ativo', true).order('nome');
     setSetores((data || []) as unknown as SetorSimples[]);
   };

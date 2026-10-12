@@ -9,7 +9,8 @@ import {
   UserPlus,
   Building2,
 } from 'lucide-react';
-import { supabase } from '@/services/supabase';
+import { supabase, isSupabaseConfigured } from '@/services/supabase';
+import { MOCK_EMPRESAS } from '@/services/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import type { Empresa, UserRole } from '@/types';
@@ -58,6 +59,42 @@ export function UsuariosPage() {
   // Carregar dados
   const fetchData = useCallback(async () => {
     setLoading(true);
+
+    if (!isSupabaseConfigured) {
+      setUsuarios([
+        {
+          id: 'perf-001',
+          user_id: '00000000-0000-0000-0000-000000000001',
+          nome_completo: 'Administrador Demo',
+          role: 'ADMINISTRADOR',
+          ativo: true,
+          created_at: '2026-01-01T00:00:00Z',
+          empresas_ids: MOCK_EMPRESAS.map(e => e.id),
+        },
+        {
+          id: 'perf-002',
+          user_id: '00000000-0000-0000-0000-000000000002',
+          nome_completo: 'Operador de Campo (Coopercar)',
+          role: 'OPERADOR',
+          ativo: true,
+          created_at: '2026-02-01T00:00:00Z',
+          empresas_ids: [MOCK_EMPRESAS[0].id],
+        },
+        {
+          id: 'perf-003',
+          user_id: '00000000-0000-0000-0000-000000000003',
+          nome_completo: 'Auditor Fiscal (Visualizador)',
+          role: 'VISUALIZADOR',
+          ativo: true,
+          created_at: '2026-03-01T00:00:00Z',
+          empresas_ids: MOCK_EMPRESAS.map(e => e.id),
+        },
+      ]);
+      setEmpresas([...MOCK_EMPRESAS]);
+      setLoading(false);
+      return;
+    }
+
     try {
       const [perfisRes, acessosRes, empresasRes] = await Promise.all([
         supabase.from('perfis_usuario').select('*').order('nome_completo'),
@@ -126,6 +163,27 @@ export function UsuariosPage() {
 
     setSaving(true);
     try {
+      if (!isSupabaseConfigured) {
+        setUsuarios((prev) =>
+          prev.map((u) => {
+            if (u.id === editUser.id) {
+              return {
+                ...u,
+                nome_completo: editNome.trim(),
+                role: editRole,
+                ativo: editAtivo,
+                empresas_ids: editEmpresas,
+              };
+            }
+            return u;
+          })
+        );
+        toast.success('Usuário e permissões atualizados com sucesso (Demonstração)');
+        setEditUser(null);
+        setSaving(false);
+        return;
+      }
+
       // 1. Atualizar perfil
       const { error: perfilErr } = await supabase
         .from('perfis_usuario')
