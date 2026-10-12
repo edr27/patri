@@ -5,6 +5,11 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { LoginPage } from '@/pages/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
+import { PatrimoniosPage } from '@/pages/patrimonios/PatrimoniosPage';
+import { EmpresasPage } from '@/pages/empresas/EmpresasPage';
+import { SetoresPage } from '@/pages/setores/SetoresPage';
+import { MovimentacoesPage } from '@/pages/movimentacoes/MovimentacoesPage';
+import { RelatoriosPage } from '@/pages/relatorios/RelatoriosPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 
 function App() {
@@ -24,60 +29,15 @@ function App() {
             }
           >
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route
-              path="/patrimonios"
-              element={
-                <PlaceholderPage
-                  title="Patrimônios"
-                  subtitle="Cadastro e consulta de bens patrimoniais"
-                />
-              }
-            />
-            <Route
-              path="/empresas"
-              element={
-                <PlaceholderPage
-                  title="Empresas"
-                  subtitle="Gerenciamento das empresas cadastradas"
-                />
-              }
-            />
-            <Route
-              path="/setores"
-              element={
-                <PlaceholderPage
-                  title="Setores"
-                  subtitle="Gerenciamento dos setores organizacionais"
-                />
-              }
-            />
-            <Route
-              path="/movimentacoes"
-              element={
-                <PlaceholderPage
-                  title="Movimentações"
-                  subtitle="Transferências e movimentações de patrimônios"
-                />
-              }
-            />
+            <Route path="/patrimonios" element={<PatrimoniosPage />} />
+            <Route path="/empresas" element={<EmpresasPage />} />
+            <Route path="/setores" element={<SetoresPage />} />
+            <Route path="/movimentacoes" element={<MovimentacoesPage />} />
             <Route
               path="/historico"
-              element={
-                <PlaceholderPage
-                  title="Histórico"
-                  subtitle="Histórico completo de movimentações"
-                />
-              }
+              element={<MovimentacoesPage />}
             />
-            <Route
-              path="/relatorios"
-              element={
-                <PlaceholderPage
-                  title="Relatórios"
-                  subtitle="Relatórios e exportações do inventário"
-                />
-              }
-            />
+            <Route path="/relatorios" element={<RelatoriosPage />} />
             <Route
               path="/usuarios"
               element={

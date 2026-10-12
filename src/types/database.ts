@@ -270,7 +270,7 @@ export interface Database {
           movimentacao_referencia_id?: string | null;
           created_at?: string;
         };
-        Update: never; // Histórico imutável
+        Update: Record<string, never>; // Histórico imutável - não permitir updates
       };
       perfis_usuario: {
         Row: {
@@ -312,7 +312,7 @@ export interface Database {
           empresa_id: string;
           created_at?: string;
         };
-        Update: never;
+        Update: Record<string, never>;
       };
       registros_auditoria: {
         Row: {
@@ -339,7 +339,7 @@ export interface Database {
           ip_address?: string | null;
           created_at?: string;
         };
-        Update: never; // Auditoria imutável
+        Update: Record<string, never>; // Auditoria imutável
       };
     };
     Functions: {

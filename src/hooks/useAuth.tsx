@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: acessos, error: acessosError } = await supabase
         .from('acessos_empresa')
         .select('empresa_id')
-        .eq('user_id', userId) as unknown as { data: { empresa_id: string }[] | null; error: Error | null };
+        .eq('user_id', userId);
 
       if (acessosError) {
         console.error('Erro ao buscar acessos:', acessosError);
