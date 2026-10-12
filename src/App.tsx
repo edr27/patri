@@ -17,7 +17,7 @@ import { UsuariosPage } from '@/pages/usuarios/UsuariosPage';
 import { ConfiguracoesPage } from '@/pages/configuracoes/ConfiguracoesPage';
 
 function AppRoutes() {
-  const { isConfigured, isDemoMode, enableDemoMode, loading } = useAuth();
+  const { enableDemoMode, loading } = useAuth();
 
   if (loading) {
     return (
@@ -30,16 +30,11 @@ function AppRoutes() {
     );
   }
 
-  // Se o Supabase não estiver configurado e o usuário não ativou o modo demonstração,
-  // renderiza a tela de configuração explicativa em vez de uma tela em branco
-  if (!isConfigured && !isDemoMode) {
-    return <SetupScreen onEnableDemoMode={enableDemoMode} />;
-  }
-
   return (
     <Routes>
       {/* Public routes */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/setup" element={<SetupScreen onEnableDemoMode={enableDemoMode} />} />
 
       {/* Protected routes */}
       <Route
