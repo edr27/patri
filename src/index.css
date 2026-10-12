@@ -381,3 +381,38 @@ body {
 .animate-slide-up {
   animation: slideUp var(--transition-normal) ease-out;
 }
+
+/* Print Styles for QR Code Labels and Reports */
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  aside, header, nav, .page-header, .no-print, button, .overlay {
+    display: none !important;
+  }
+
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .print-area {
+    display: block !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    z-index: 99999 !important;
+  }
+
+  @page {
+    margin: 5mm;
+  }
+}
+

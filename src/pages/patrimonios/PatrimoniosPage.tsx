@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Package, Plus, Search, Eye, Pencil, Power, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, Plus, Search, Eye, Pencil, Power, ChevronLeft, ChevronRight, QrCode, ScanLine, Tag } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { listarPatrimonios, criarPatrimonio, editarPatrimonio, desativarPatrimonio } from '@/services/patrimonios';
 import { supabase } from '@/services/supabase';
 import { toast } from 'sonner';
+import { EtiquetaModal } from '@/components/patrimonios/EtiquetaModal';
+import { ConsultaRapidaModal } from '@/components/patrimonios/ConsultaRapidaModal';
 import type { PatrimonioCompleto, FiltrosPatrimonio, CategoriaPatrimonio } from '@/types';
 
 interface SetorSimples { id: string; nome: string; empresa_id: string }
@@ -36,6 +38,8 @@ export function PatrimoniosPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState<PatrimonioCompleto | null>(null);
   const [saving, setSaving] = useState(false);
+  const [selectedEtiqueta, setSelectedEtiqueta] = useState<PatrimonioCompleto | null>(null);
+  const [showConsultaRapida, setShowConsultaRapida] = useState(false);
 
   // Form state
   const [form, setForm] = useState({
@@ -62,7 +66,7 @@ export function PatrimoniosPage() {
       setPatrimonios(result.dados);
       setTotal(result.total);
       setTotalPaginas(result.total_paginas);
-    } catch (err) {
+    } catch {
       toast.error('Erro ao carregar patrimônios');
     }
     setLoading(false);
@@ -158,11 +162,21 @@ export function PatrimoniosPage() {
           <h1 className="page-title">Patrimônios</h1>
           <p className="page-subtitle">{total} patrimônio{total !== 1 ? 's' : ''} encontrado{total !== 1 ? 's' : ''}</p>
         </div>
-        {canEdit && (
-          <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(true); }}>
-            <Plus size={18} /> Novo Patrimônio
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="btn btn-secondary flex items-center gap-1.5"
+            onClick={() => setShowConsultaRapida(true)}
+            title="Consultar código ou bipar com leitor"
+          >
+            <ScanLine size={18} /> Consultar / Bipar QR
           </button>
-        )}
+          {canEdit && (
+            <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(true); }}>
+              <Plus size={18} /> Novo Patrimônio
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filtros */}
@@ -316,7 +330,18 @@ export function PatrimoniosPage() {
                 {showDetail.descricao && <div className="col-span-2"><span className="text-surface-500">Descrição:</span> <span className="ml-1">{showDetail.descricao}</span></div>}
                 {showDetail.observacoes && <div className="col-span-2"><span className="text-surface-500">Observações:</span> <span className="ml-1">{showDetail.observacoes}</span></div>}
               </div>
-              <div className="flex justify-end mt-4 pt-4 border-t border-surface-100">
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-surface-100">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary flex items-center gap-1.5"
+                  onClick={() => {
+                    const item = showDetail;
+                    setShowDetail(null);
+                    setSelectedEtiqueta(item);
+                  }}
+                >
+                  <Tag size={15} /> Gerar Etiqueta QR
+                </button>
                 <button className="btn btn-secondary" onClick={() => setShowDetail(null)}>Fechar</button>
               </div>
             </div>
@@ -357,6 +382,7 @@ export function PatrimoniosPage() {
                     <td className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button className="btn btn-sm btn-ghost" title="Ver detalhes" onClick={() => setShowDetail(p)}><Eye size={15} /></button>
+                        <button className="btn btn-sm btn-ghost" title="Etiqueta / QR Code" onClick={() => setSelectedEtiqueta(p)}><QrCode size={15} /></button>
                         {canEdit && p.status === 'ativo' && (
                           <>
                             <button className="btn btn-sm btn-ghost" title="Editar" onClick={() => openEdit(p)}><Pencil size={15} /></button>
@@ -399,6 +425,21 @@ export function PatrimoniosPage() {
             </div>
           )}
         </div>
+      )}
+      {/* Modais de Etiqueta e Consulta Rápida */}
+      {selectedEtiqueta && (
+        <EtiquetaModal
+          patrimonio={selectedEtiqueta}
+          onClose={() => setSelectedEtiqueta(null)}
+        />
+      )}
+
+      {showConsultaRapida && (
+        <ConsultaRapidaModal
+          onClose={() => setShowConsultaRapida(false)}
+          onSelectDetalhes={(p) => setShowDetail(p)}
+          onSelectEtiqueta={(p) => setSelectedEtiqueta(p)}
+        />
       )}
     </div>
   );

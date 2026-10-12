@@ -10,7 +10,9 @@ import { EmpresasPage } from '@/pages/empresas/EmpresasPage';
 import { SetoresPage } from '@/pages/setores/SetoresPage';
 import { MovimentacoesPage } from '@/pages/movimentacoes/MovimentacoesPage';
 import { RelatoriosPage } from '@/pages/relatorios/RelatoriosPage';
-import { PlaceholderPage } from '@/pages/PlaceholderPage';
+import { InventarioPage } from '@/pages/inventario/InventarioPage';
+import { UsuariosPage } from '@/pages/usuarios/UsuariosPage';
+import { ConfiguracoesPage } from '@/pages/configuracoes/ConfiguracoesPage';
 
 function App() {
   return (
@@ -33,19 +35,14 @@ function App() {
             <Route path="/empresas" element={<EmpresasPage />} />
             <Route path="/setores" element={<SetoresPage />} />
             <Route path="/movimentacoes" element={<MovimentacoesPage />} />
-            <Route
-              path="/historico"
-              element={<MovimentacoesPage />}
-            />
+            <Route path="/historico" element={<MovimentacoesPage />} />
+            <Route path="/inventario" element={<InventarioPage />} />
             <Route path="/relatorios" element={<RelatoriosPage />} />
             <Route
               path="/usuarios"
               element={
                 <ProtectedRoute requiredRole={['ADMINISTRADOR']}>
-                  <PlaceholderPage
-                    title="Usuários"
-                    subtitle="Gerenciamento de usuários e permissões"
-                  />
+                  <UsuariosPage />
                 </ProtectedRoute>
               }
             />
@@ -53,10 +50,7 @@ function App() {
               path="/configuracoes"
               element={
                 <ProtectedRoute requiredRole={['ADMINISTRADOR']}>
-                  <PlaceholderPage
-                    title="Configurações"
-                    subtitle="Configurações gerais do sistema"
-                  />
+                  <ConfiguracoesPage />
                 </ProtectedRoute>
               }
             />

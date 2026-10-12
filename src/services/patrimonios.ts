@@ -58,6 +58,23 @@ export async function buscarPatrimonio(id: string): Promise<PatrimonioCompleto> 
   return data as unknown as PatrimonioCompleto;
 }
 
+export async function obterPatrimonioPorCodigo(codigo: string): Promise<PatrimonioCompleto | null> {
+  const { data, error } = await supabase
+    .from('patrimonios')
+    .select(`
+      *,
+      empresa_atual:empresas!patrimonios_empresa_atual_id_fkey(*),
+      setor_atual:setores!patrimonios_setor_atual_id_fkey(*),
+      localizacao_atual:localizacoes!patrimonios_localizacao_atual_id_fkey(*),
+      categoria:categorias_patrimonio!patrimonios_categoria_id_fkey(*)
+    `)
+    .ilike('codigo', codigo.trim())
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data ? (data as unknown as PatrimonioCompleto) : null;
+}
+
 interface CriarPatrimonioParams {
   codigo: string;
   nome: string;

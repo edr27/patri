@@ -81,6 +81,9 @@ SELECT 'USER_UID_AQUI', id FROM empresas;
 # Iniciar servidor de desenvolvimento
 npm run dev
 
+# Executar suíte de testes automatizados
+npm test
+
 # Build de produção
 npm run build
 
@@ -91,7 +94,23 @@ npm run preview
 npm run lint
 ```
 
+## Funcionalidades Principais
+
+1. **Dashboard Executivo:** Indicadores em tempo real por empresa, setor, categoria e estado de conservação.
+2. **Cadastro & Gestão de Patrimônios:** Códigos patrimoniais legíveis únicos, detalhamento completo e histórico.
+3. **Etiquetas com QR Code:** Geração visual de etiquetas patrimoniais com QR Code SVG de alta precisão e suporte a impressão direta em impressoras térmicas e a laser.
+4. **Consulta Rápida / Bipagem:** Pesquisa instantânea por leitor de código de barras ou digitação.
+5. **Transferências Atômicas Seguras:** Wizard de 3 etapas com execução via RPC no PostgreSQL com bloqueio de concorrência (`SELECT FOR UPDATE`).
+6. **Conferência de Inventário Físico:** Auditoria setorial em tempo real com leitor, comparação automática de bens localizados vs pendentes vs divergentes e exportação em CSV.
+7. **Relatórios Completos:** Inventário geral, por empresa, por setor, transferências e histórico com exportação CSV formatada.
+8. **Gestão de Usuários e Permissões:** RBAC multiempresa com perfis Administrador, Operador e Visualizador com isolamento estrito via RLS.
+9. **Configurações & Auditoria:** CRUD de categorias de patrimônio e inspeção de logs imutáveis do sistema.
+
 ## Deploy na Vercel
+
+### Configuração Automática
+
+O projeto já contém o arquivo `vercel.json` configurado com rewrites de SPA e cabeçalhos de segurança HTTP.
 
 ### Via GitHub
 

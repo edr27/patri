@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  ClipboardCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -35,6 +36,7 @@ const navItems: NavItem[] = [
   { label: 'Setores', path: '/setores', icon: FolderTree },
   { label: 'Movimentações', path: '/movimentacoes', icon: ArrowRightLeft },
   { label: 'Histórico', path: '/historico', icon: History },
+  { label: 'Inventário Físico', path: '/inventario', icon: ClipboardCheck },
   { label: 'Relatórios', path: '/relatorios', icon: BarChart3 },
   { label: 'Usuários', path: '/usuarios', icon: Users, adminOnly: true },
   { label: 'Configurações', path: '/configuracoes', icon: Settings, adminOnly: true },
