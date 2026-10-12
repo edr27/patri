@@ -1,14 +1,23 @@
-import { useState, type FormEvent } from 'react';
-import { Shield, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useState, useEffect, type FormEvent } from 'react';
+import { Shield, Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
 export function LoginPage() {
-  const { signIn } = useAuth();
+  const { signIn, session, isConfigured, isDemoMode, enableDemoMode } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Se já estiver logado, redirecionar automaticamente para o dashboard
+  useEffect(() => {
+    if (session) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [session, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -18,8 +27,19 @@ export function LoginPage() {
     const { error: signInError } = await signIn(email, password);
     if (signInError) {
       setError('E-mail ou senha incorretos. Verifique suas credenciais.');
+      setLoading(false);
+    } else {
+      navigate('/dashboard', { replace: true });
     }
-    setLoading(false);
+  };
+
+  const handlePreencherDemo = () => {
+    setEmail('admin@coopercar.com.br');
+    setPassword('admin123456');
+    if (!isConfigured) {
+      enableDemoMode();
+      navigate('/dashboard', { replace: true });
+    }
   };
 
   return (
@@ -44,7 +64,7 @@ export function LoginPage() {
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8">
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-surface-900">Acesse sua conta</h2>
-            <p className="text-sm text-surface-500 mt-1">Digite suas credenciais para entrar</p>
+            <p className="text-sm text-surface-500 mt-1">Digite suas credenciais corporativas</p>
           </div>
 
           {error && (
@@ -61,7 +81,7 @@ export function LoginPage() {
                 type="email"
                 required
                 className="form-input"
-                placeholder="seu.email@empresa.com"
+                placeholder="admin@coopercar.com.br"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -97,7 +117,7 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn btn-primary w-full h-11 text-base"
+              className="btn btn-primary w-full h-11 text-base shadow-md shadow-primary-600/25"
             >
               {loading ? (
                 <>
@@ -105,12 +125,24 @@ export function LoginPage() {
                   Entrando...
                 </>
               ) : (
-                'Entrar'
+                'Entrar no Sistema'
               )}
             </button>
           </form>
 
-          <div className="mt-6 pt-4 border-t border-surface-100">
+          {/* Dica de Acesso Rápido / Demo */}
+          <div className="mt-5 pt-4 border-t border-surface-100">
+            {(!isConfigured || isDemoMode) && (
+              <button
+                type="button"
+                onClick={handlePreencherDemo}
+                className="w-full py-2 px-3 mb-3 bg-primary-50 hover:bg-primary-100 text-primary-700 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors border border-primary-200"
+              >
+                <KeyRound size={14} />
+                Entrar com Acesso Demo (Admin)
+              </button>
+            )}
+
             <p className="text-xs text-center text-surface-400">
               Coopercar · Coopercar Store · Cooperauto
             </p>
