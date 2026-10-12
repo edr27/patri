@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/services/supabase';
+import { supabase, isSupabaseConfigured } from '@/services/supabase';
 import type { AuthUser, PerfilUsuario, Empresa } from '@/types';
 
 interface AuthContextType {
@@ -10,10 +10,38 @@ interface AuthContextType {
   empresasAcesso: Empresa[];
   authUser: AuthUser | null;
   loading: boolean;
+  isConfigured: boolean;
+  isDemoMode: boolean;
+  enableDemoMode: () => void;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshPerfil: () => Promise<void>;
 }
+
+const DEMO_USER: User = {
+  id: '00000000-0000-0000-0000-000000000001',
+  app_metadata: {},
+  user_metadata: { nome_completo: 'Administrador Demo' },
+  aud: 'authenticated',
+  created_at: new Date().toISOString(),
+  email: 'admin@coopercar.com.br',
+} as unknown as User;
+
+const DEMO_PERFIL: PerfilUsuario = {
+  id: '00000000-0000-0000-0000-000000000001',
+  user_id: '00000000-0000-0000-0000-000000000001',
+  nome_completo: 'Administrador Demo',
+  role: 'ADMINISTRADOR',
+  ativo: true,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
+const DEMO_EMPRESAS: Empresa[] = [
+  { id: '11111111-1111-1111-1111-111111111111', nome: 'Coopercar', ativo: true, created_at: '', updated_at: '' },
+  { id: '22222222-2222-2222-2222-222222222222', nome: 'Coopercar Store', ativo: true, created_at: '', updated_at: '' },
+  { id: '33333333-3333-3333-3333-333333333333', nome: 'Cooperauto', ativo: true, created_at: '', updated_at: '' },
+];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -23,10 +51,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [perfil, setPerfil] = useState<PerfilUsuario | null>(null);
   const [empresasAcesso, setEmpresasAcesso] = useState<Empresa[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(() => {
+    return localStorage.getItem('patricontrol_demo_mode') === 'true';
+  });
+
+  const enableDemoMode = useCallback(() => {
+    localStorage.setItem('patricontrol_demo_mode', 'true');
+    setIsDemoMode(true);
+    setUser(DEMO_USER);
+    setPerfil(DEMO_PERFIL);
+    setEmpresasAcesso(DEMO_EMPRESAS);
+    setSession({
+      access_token: 'demo-token',
+      token_type: 'bearer',
+      expires_in: 3600,
+      refresh_token: 'demo-refresh',
+      user: DEMO_USER,
+    } as Session);
+    setLoading(false);
+  }, []);
 
   const fetchPerfil = useCallback(async (userId: string) => {
     try {
-      // Buscar perfil do usuário
       const { data: perfilData, error: perfilError } = await supabase
         .from('perfis_usuario')
         .select('*')
@@ -43,7 +89,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setPerfil(perfilData);
 
-      // Buscar empresas com acesso
       const { data: acessos, error: acessosError } = await supabase
         .from('acessos_empresa')
         .select('empresa_id')
@@ -76,7 +121,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Verificar sessão atual
+    // Se não estiver configurado o Supabase
+    if (!isSupabaseConfigured) {
+      if (isDemoMode) {
+        enableDemoMode();
+      } else {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Se estiver configurado, verificar sessão real
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
@@ -85,9 +140,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setLoading(false);
       }
+    }).catch(() => {
+      setLoading(false);
     });
 
-    // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, newSession) => {
         setSession(newSession);
@@ -103,21 +159,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     return () => subscription.unsubscribe();
-  }, [fetchPerfil]);
+  }, [fetchPerfil, isDemoMode, enableDemoMode]);
 
   const signIn = async (email: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      enableDemoMode();
+      return { error: null };
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error ? new Error(error.message) : null };
   };
 
   const signOut = async () => {
+    if (isDemoMode) {
+      localStorage.removeItem('patricontrol_demo_mode');
+      setIsDemoMode(false);
+      setSession(null);
+      setUser(null);
+      setPerfil(null);
+      setEmpresasAcesso([]);
+      return;
+    }
     await supabase.auth.signOut();
     setPerfil(null);
     setEmpresasAcesso([]);
   };
 
   const refreshPerfil = async () => {
-    if (user) {
+    if (user && isSupabaseConfigured) {
       await fetchPerfil(user.id);
     }
   };
@@ -137,6 +206,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       empresasAcesso,
       authUser,
       loading,
+      isConfigured: isSupabaseConfigured,
+      isDemoMode,
+      enableDemoMode,
       signIn,
       signOut,
       refreshPerfil,
