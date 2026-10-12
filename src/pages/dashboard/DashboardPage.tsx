@@ -3,7 +3,6 @@ import {
   Package,
   Building2,
   TrendingUp,
-  AlertTriangle,
   ArrowRightLeft,
   BarChart3,
   MapPin,
@@ -11,7 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/hooks/useAuth';
-import type { Empresa, DashboardStats, MovimentacaoCompleta } from '@/types';
+import type { DashboardStats, MovimentacaoCompleta } from '@/types';
 
 interface StatCardProps {
   label: string;
@@ -37,8 +36,22 @@ function StatCard({ label, value, icon: Icon, iconBg, iconColor, subtitle }: Sta
   );
 }
 
+// Tipos intermediários para queries parciais
+interface PatrimonioResumo {
+  id: string;
+  status: string;
+  empresa_atual_id: string;
+  setor_atual_id: string | null;
+  categoria_id: string;
+}
+
+interface CategoriaResumo {
+  id: string;
+  nome: string;
+}
+
 export function DashboardPage() {
-  const { authUser, empresasAcesso } = useAuth();
+  const { empresasAcesso } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedEmpresa, setSelectedEmpresa] = useState<string>('');
@@ -47,7 +60,6 @@ export function DashboardPage() {
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
-      // Empresas que o usuário pode acessar
       const empresaIds = empresasAcesso.map(e => e.id);
       if (empresaIds.length === 0) {
         setStats(null);
@@ -55,7 +67,6 @@ export function DashboardPage() {
         return;
       }
 
-      // Filtrar por empresa selecionada ou todas acessíveis
       const filterEmpresa = selectedEmpresa || undefined;
 
       // Total de patrimônios
@@ -68,11 +79,12 @@ export function DashboardPage() {
         patrimonioQuery = patrimonioQuery.eq('empresa_atual_id', filterEmpresa);
       }
 
-      const { data: patrimonios, count: totalPatrimonios } = await patrimonioQuery;
+      const { data: rawPatrimonios, count: totalPatrimonios } = await patrimonioQuery;
+      const patrimonios = (rawPatrimonios || []) as unknown as PatrimonioResumo[];
 
-      const ativos = patrimonios?.filter(p => p.status === 'ativo').length || 0;
-      const desativados = patrimonios?.filter(p => p.status === 'desativado').length || 0;
-      const semLocalizacao = patrimonios?.filter(p => p.status === 'ativo' && !p.setor_atual_id).length || 0;
+      const ativos = patrimonios.filter(p => p.status === 'ativo').length;
+      const desativados = patrimonios.filter(p => p.status === 'desativado').length;
+      const semLocalizacao = patrimonios.filter(p => p.status === 'ativo' && !p.setor_atual_id).length;
 
       // Contagem por empresa
       const porEmpresa: DashboardStats['por_empresa'] = empresasAcesso
@@ -80,27 +92,25 @@ export function DashboardPage() {
         .map(empresa => ({
           empresa_id: empresa.id,
           empresa_nome: empresa.nome,
-          quantidade: patrimonios?.filter(p => p.empresa_atual_id === empresa.id && p.status === 'ativo').length || 0,
+          quantidade: patrimonios.filter(p => p.empresa_atual_id === empresa.id && p.status === 'ativo').length,
         }));
 
       // Contagem por categoria
-      const { data: categorias } = await supabase
+      const { data: rawCategorias } = await supabase
         .from('categorias_patrimonio')
         .select('id, nome')
         .eq('ativo', true);
 
-      const porCategoria: DashboardStats['por_categoria'] = (categorias || []).map(cat => ({
+      const categorias = (rawCategorias || []) as unknown as CategoriaResumo[];
+
+      const porCategoria: DashboardStats['por_categoria'] = categorias.map(cat => ({
         categoria_id: cat.id,
         categoria_nome: cat.nome,
-        quantidade: patrimonios?.filter(p => p.categoria_id === cat.id && p.status === 'ativo').length || 0,
+        quantidade: patrimonios.filter(p => p.categoria_id === cat.id && p.status === 'ativo').length,
       })).filter(c => c.quantidade > 0);
 
-      // Contagem por estado
-      const estados = ['novo', 'bom', 'regular', 'ruim', 'inservivel'] as const;
-      const porEstado: DashboardStats['por_estado'] = []; // será preenchido com dados reais quando houver
-
       // Movimentações recentes
-      let movQuery = supabase
+      const { data: movRecentes } = await supabase
         .from('movimentacoes_patrimonio')
         .select(`
           *,
@@ -113,7 +123,6 @@ export function DashboardPage() {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      const { data: movRecentes } = await movQuery;
       setMovimentacoes((movRecentes as unknown as MovimentacaoCompleta[]) || []);
 
       setStats({
@@ -123,7 +132,7 @@ export function DashboardPage() {
         patrimonios_sem_localizacao: semLocalizacao,
         por_empresa: porEmpresa,
         por_categoria: porCategoria,
-        por_estado: porEstado,
+        por_estado: [],
         movimentacoes_recentes: [],
       });
     } catch (err) {

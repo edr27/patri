@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: acessos, error: acessosError } = await supabase
         .from('acessos_empresa')
         .select('empresa_id')
-        .eq('user_id', userId);
+        .eq('user_id', userId) as unknown as { data: { empresa_id: string }[] | null; error: Error | null };
 
       if (acessosError) {
         console.error('Erro ao buscar acessos:', acessosError);
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (acessos && acessos.length > 0) {
-        const empresaIds = acessos.map(a => a.empresa_id);
+        const empresaIds = acessos.map((a: { empresa_id: string }) => a.empresa_id);
         const { data: empresas } = await supabase
           .from('empresas')
           .select('*')
