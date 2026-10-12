@@ -133,6 +133,17 @@ export function UsuariosPage() {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (editUser) setEditUser(null);
+        if (showNovoUserModal) setShowNovoUserModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editUser, showNovoUserModal]);
+
   // Abrir Modal de Edição
   const abrirEdicao = (u: PerfilComAcessos) => {
     setEditUser(u);
@@ -404,7 +415,10 @@ export function UsuariosPage() {
       {editUser && (
         <>
           <div className="overlay" onClick={() => setEditUser(null)} />
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 px-4 overflow-y-auto">
+          <div
+            className="fixed inset-0 z-50 flex items-start justify-center pt-8 px-4 overflow-y-auto"
+            onClick={() => setEditUser(null)}
+          >
             <div
               className="card p-6 w-full max-w-xl mb-8 animate-slide-up shadow-2xl relative"
               onClick={(e) => e.stopPropagation()}
@@ -544,7 +558,10 @@ export function UsuariosPage() {
       {showNovoUserModal && (
         <>
           <div className="overlay" onClick={() => setShowNovoUserModal(false)} />
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 px-4 overflow-y-auto">
+          <div
+            className="fixed inset-0 z-50 flex items-start justify-center pt-8 px-4 overflow-y-auto"
+            onClick={() => setShowNovoUserModal(false)}
+          >
             <div
               className="card p-6 w-full max-w-xl mb-8 animate-slide-up shadow-2xl relative"
               onClick={(e) => e.stopPropagation()}

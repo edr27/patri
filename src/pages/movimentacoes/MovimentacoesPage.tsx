@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { ArrowRightLeft, Search, ChevronLeft, ChevronRight, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowRightLeft, Search, ChevronLeft, ChevronRight, ArrowRight, CheckCircle2, Loader2, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { realizarTransferencia, listarMovimentacoes } from '@/services/movimentacoes';
@@ -107,6 +107,16 @@ export function MovimentacoesPage() {
 
   useEffect(() => { fetchSetores(); }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showTransfer) {
+        resetTransfer();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showTransfer]);
+
   const setoresDestino = empresaDestinoId ? setores.filter(s => s.empresa_id === empresaDestinoId) : [];
 
   const resetTransfer = () => {
@@ -166,10 +176,25 @@ export function MovimentacoesPage() {
       {showTransfer && (
         <>
           <div className="overlay" onClick={resetTransfer} />
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 px-4 overflow-y-auto">
-            <div className="card p-6 w-full max-w-2xl mb-8 animate-slide-up" onClick={(e) => e.stopPropagation()}>
-              <h2 className="text-lg font-semibold text-surface-900 mb-1">Nova Transferência</h2>
-              <p className="text-sm text-surface-500 mb-4">Etapa {step} de 3</p>
+          <div
+            className="fixed inset-0 z-50 flex items-start justify-center pt-8 px-4 overflow-y-auto"
+            onClick={resetTransfer}
+          >
+            <div className="card p-6 w-full max-w-2xl mb-8 animate-slide-up relative shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-surface-100">
+                <div>
+                  <h2 className="text-lg font-semibold text-surface-900">Nova Transferência</h2>
+                  <p className="text-xs text-surface-500">Etapa {step} de 3</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetTransfer}
+                  className="p-1.5 text-surface-400 hover:text-surface-700 hover:bg-surface-100 rounded-lg transition-colors"
+                  title="Fechar (Esc)"
+                >
+                  <X size={20} />
+                </button>
+              </div>
 
               {/* Steps indicator */}
               <div className="flex gap-1 mb-6">
@@ -229,7 +254,10 @@ export function MovimentacoesPage() {
                       </div>
                     </div>
                   )}
-                  <div className="flex justify-end mt-6">
+                  <div className="flex justify-between items-center mt-6">
+                    <button type="button" className="btn btn-secondary" onClick={resetTransfer}>
+                      Cancelar
+                    </button>
                     <button className="btn btn-primary" disabled={!selectedPat} onClick={() => setStep(2)}>
                       Próximo <ArrowRight size={16} />
                     </button>
@@ -274,8 +302,11 @@ export function MovimentacoesPage() {
                     <label className="form-label">Observações</label>
                     <textarea className="form-input" rows={2} placeholder="Observações adicionais..." value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
                   </div>
-                  <div className="flex justify-between mt-4">
-                    <button className="btn btn-secondary" onClick={() => setStep(1)}>Voltar</button>
+                  <div className="flex justify-between items-center mt-4">
+                    <div className="flex gap-2">
+                      <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>Voltar</button>
+                      <button type="button" className="btn btn-ghost text-surface-500 hover:text-surface-800" onClick={resetTransfer}>Cancelar</button>
+                    </div>
                     <button className="btn btn-primary" disabled={!empresaDestinoId || !motivo.trim()} onClick={() => setStep(3)}>
                       Próximo <ArrowRight size={16} />
                     </button>
@@ -314,8 +345,11 @@ export function MovimentacoesPage() {
                     {responsavelRecebimento && <div><span className="text-surface-500">Recebimento:</span> <span className="ml-1">{responsavelRecebimento}</span></div>}
                     {observacoes && <div><span className="text-surface-500">Obs:</span> <span className="ml-1">{observacoes}</span></div>}
                   </div>
-                  <div className="flex justify-between mt-6">
-                    <button className="btn btn-secondary" onClick={() => setStep(2)}>Voltar</button>
+                  <div className="flex justify-between items-center mt-6">
+                    <div className="flex gap-2">
+                      <button type="button" className="btn btn-secondary" onClick={() => setStep(2)}>Voltar</button>
+                      <button type="button" className="btn btn-ghost text-surface-500 hover:text-surface-800" onClick={resetTransfer}>Cancelar</button>
+                    </div>
                     <button className="btn btn-primary" onClick={handleTransfer} disabled={saving}>
                       {saving ? (
                         <><Loader2 size={16} className="animate-spin" /> Processando...</>

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Printer, Download, Copy, Check, X, Shield, Tag } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,6 +13,14 @@ export function EtiquetaModal({ patrimonio, onClose }: EtiquetaModalProps) {
   const [formato, setFormato] = useState<'padrao' | 'compacta'>('padrao');
   const [copied, setCopied] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const qrValue = JSON.stringify({
     codigo: patrimonio.codigo,
@@ -65,7 +73,10 @@ export function EtiquetaModal({ patrimonio, onClose }: EtiquetaModalProps) {
   return (
     <>
       <div className="overlay" onClick={onClose} />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+        onClick={onClose}
+      >
         <div
           className="card p-6 w-full max-w-xl animate-slide-up shadow-2xl relative"
           onClick={(e) => e.stopPropagation()}

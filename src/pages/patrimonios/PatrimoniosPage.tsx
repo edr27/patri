@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Package, Plus, Search, Eye, Pencil, Power, ChevronLeft, ChevronRight, QrCode, ScanLine, Tag } from 'lucide-react';
+import { Package, Plus, Search, Eye, Pencil, Power, ChevronLeft, ChevronRight, QrCode, ScanLine, Tag, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { listarPatrimonios, criarPatrimonio, editarPatrimonio, desativarPatrimonio } from '@/services/patrimonios';
@@ -96,6 +96,21 @@ export function PatrimoniosPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { fetchAux(); }, [fetchAux]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showForm) {
+          setShowForm(false);
+          resetForm();
+        }
+        if (showDetail) setShowDetail(null);
+        if (showConsultaRapida) setShowConsultaRapida(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showForm, showDetail, showConsultaRapida]);
 
   const setoresFiltered = form.empresa_atual_id
     ? setores.filter(s => s.empresa_id === form.empresa_atual_id)
@@ -226,11 +241,29 @@ export function PatrimoniosPage() {
       {showForm && (
         <>
           <div className="overlay" onClick={() => { setShowForm(false); resetForm(); }} />
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 px-4 overflow-y-auto">
-            <div className="card p-6 w-full max-w-3xl mb-8 animate-slide-up" onClick={(e) => e.stopPropagation()}>
-              <h2 className="text-lg font-semibold text-surface-900 mb-4">
-                {editId ? 'Editar Patrimônio' : 'Novo Patrimônio'}
-              </h2>
+          <div
+            className="fixed inset-0 z-50 flex items-start justify-center pt-8 px-4 overflow-y-auto"
+            onClick={() => { setShowForm(false); resetForm(); }}
+          >
+            <div className="card p-6 w-full max-w-3xl mb-8 animate-slide-up relative shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-surface-100">
+                <div>
+                  <h2 className="text-lg font-semibold text-surface-900">
+                    {editId ? 'Editar Patrimônio' : 'Novo Patrimônio'}
+                  </h2>
+                  <p className="text-xs text-surface-500">
+                    Preencha as informações cadastrais e de localização do bem
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setShowForm(false); resetForm(); }}
+                  className="p-1.5 text-surface-400 hover:text-surface-700 hover:bg-surface-100 rounded-lg transition-colors"
+                  title="Fechar (Esc)"
+                >
+                  <X size={20} />
+                </button>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="form-label">Código Patrimonial *</label>
@@ -321,11 +354,24 @@ export function PatrimoniosPage() {
       {showDetail && (
         <>
           <div className="overlay" onClick={() => setShowDetail(null)} />
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 px-4 overflow-y-auto">
-            <div className="card p-6 w-full max-w-2xl mb-8 animate-slide-up" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-surface-900">Detalhes do Patrimônio</h2>
-                <span className={`badge ${statusBadge[showDetail.status]}`}>{statusLabels[showDetail.status]}</span>
+          <div
+            className="fixed inset-0 z-50 flex items-start justify-center pt-8 px-4 overflow-y-auto"
+            onClick={() => setShowDetail(null)}
+          >
+            <div className="card p-6 w-full max-w-2xl mb-8 animate-slide-up relative shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-surface-100">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-lg font-semibold text-surface-900">Detalhes do Patrimônio</h2>
+                  <span className={`badge ${statusBadge[showDetail.status]}`}>{statusLabels[showDetail.status]}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDetail(null)}
+                  className="p-1.5 text-surface-400 hover:text-surface-700 hover:bg-surface-100 rounded-lg transition-colors"
+                  title="Fechar (Esc)"
+                >
+                  <X size={20} />
+                </button>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div><span className="text-surface-500">Código:</span> <span className="font-medium ml-1">{showDetail.codigo}</span></div>

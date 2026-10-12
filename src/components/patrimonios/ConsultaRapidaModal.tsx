@@ -24,7 +24,12 @@ export function ConsultaRapidaModal({
 
   useEffect(() => {
     inputRef.current?.focus();
-  }, []);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleBuscar = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -51,7 +56,10 @@ export function ConsultaRapidaModal({
   return (
     <>
       <div className="overlay" onClick={onClose} />
-      <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4">
+      <div
+        className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4"
+        onClick={onClose}
+      >
         <div
           className="card p-6 w-full max-w-lg animate-slide-up shadow-2xl relative"
           onClick={(e) => e.stopPropagation()}
